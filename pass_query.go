@@ -25,7 +25,7 @@ func passFilterBySatellite(items []PassWindow, satellite string) []PassWindow {
 	if satellite == "" {
 		return items
 	}
-	out := items[:0]
+	out := make([]PassWindow, 0, len(items))
 	for _, item := range items {
 		if strings.Contains(strings.ToLower(item.Satellite), strings.ToLower(satellite)) {
 			out = append(out, item)
@@ -38,7 +38,7 @@ func passFilterByState(items []PassWindow, state string) []PassWindow {
 	if state == "" {
 		return items
 	}
-	out := items[:0]
+	out := make([]PassWindow, 0, len(items))
 	for _, item := range items {
 		if item.State == state {
 			out = append(out, item)

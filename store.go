@@ -32,7 +32,14 @@ func (s *PassStore) List(ctx context.Context) ([]PassWindow, error) {
 		return nil, ctx.Err()
 	default:
 	}
-	return s.passes, nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	// Return a defensive copy so callers cannot mutate the store's internal
+	// slice (filters/sorts operate in place) and so reads are isolated from
+	// concurrent Add/UpdateState writes.
+	out := make([]PassWindow, len(s.passes))
+	copy(out, s.passes)
+	return out, nil
 }
 
 func (s *PassStore) Get(ctx context.Context, id string) (PassWindow, error) {

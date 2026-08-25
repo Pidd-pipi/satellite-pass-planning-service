@@ -69,7 +69,7 @@ func (a *passAPI) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filtered := passFilterBySatellite(items, q.Satellite)
-	filtered = passFilterByState(items, q.State)
+	filtered = passFilterByState(filtered, q.State)
 	sortPasses(filtered)
 	q = passQueryDefaults(q)
 	start, end := passBounds(len(filtered), q.Page, q.PageSize)
