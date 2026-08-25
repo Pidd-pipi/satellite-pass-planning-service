@@ -53,13 +53,26 @@ func (s *PassStats) Summary(ctx context.Context, store *PassStore) (PassSummary,
 		return PassSummary{}, err
 	}
 	out := computePassSummary(items)
+	s.mu.Lock()
 	s.cached = &out
+	s.mu.Unlock()
 	return out, nil
 }
 
 func (s *PassStats) Cached() PassSummary {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.cached == nil {
 		return PassSummary{}
 	}
 	return *s.cached
+}
+
+// Invalidate drops the cached summary so subsequent readers do not observe a
+// stale snapshot after the underlying passes change. The next Summary call
+// (from the background ticker or an HTTP request) repopulates it.
+func (s *PassStats) Invalidate() {
+	s.mu.Lock()
+	s.cached = nil
+	s.mu.Unlock()
 }

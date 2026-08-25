@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const statsRefreshInterval = 30 * time.Second
+
 type passAPI struct {
 	store    *PassStore
 	audit    *PassAudit
@@ -18,19 +20,41 @@ type passAPI struct {
 	exporter *PassExporter
 	notifier *PassNotifier
 	reporter *PassReporter
+
+	statsStop chan struct{}
+	statsDone <-chan struct{}
 }
 
 func newPassAPI(store *PassStore) *passAPI {
 	audit := newPassAudit()
+	stats := newPassStats()
+	stop := make(chan struct{})
+	done := startStatsTicker(stats, store, statsRefreshInterval, stop)
 	return &passAPI{
-		store:    store,
-		audit:    audit,
-		state:    newPassStateMachine(),
-		planner:  newPassPlanner(newOpsClock(), LoadConfig().Limits),
-		stats:    newPassStats(),
-		exporter: newPassExporter(store, audit),
-		notifier: newPassNotifier(),
-		reporter: newPassReporter(),
+		store:     store,
+		audit:     audit,
+		state:     newPassStateMachine(),
+		planner:   newPassPlanner(newOpsClock(), LoadConfig().Limits),
+		stats:     stats,
+		exporter:  newPassExporter(store, audit),
+		notifier:  newPassNotifier(),
+		reporter:  newPassReporter(),
+		statsStop: stop,
+		statsDone: done,
+	}
+}
+
+// Close stops the background stats refresh goroutine and blocks until it has
+// exited. It is safe to call multiple times.
+func (a *passAPI) Close() {
+	select {
+	case <-a.statsStop:
+		// already closed
+	default:
+		close(a.statsStop)
+	}
+	if a.statsDone != nil {
+		<-a.statsDone
 	}
 }
 
@@ -100,6 +124,7 @@ func (a *passAPI) create(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, passStatusForError(err), map[string]string{"error": err.Error()})
 		return
 	}
+	a.stats.Invalidate()
 	event := a.audit.Add(created.ID, "created", opsActorFromRequest(r))
 	a.notifier.Publish(event)
 	writeJSON(w, http.StatusCreated, created)
@@ -131,6 +156,7 @@ func (a *passAPI) cancel(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, passStatusForError(err), map[string]string{"error": err.Error()})
 		return
 	}
+	a.stats.Invalidate()
 	event := a.audit.Add(id, "cancelled", opsActorFromRequest(r))
 	a.notifier.Publish(event)
 	writeJSON(w, http.StatusOK, updated)
