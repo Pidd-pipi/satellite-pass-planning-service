@@ -44,6 +44,10 @@ func opsJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+func opsErrorJSON(w http.ResponseWriter, err error) {
+	code := opsCode(err)
+	opsJSON(w, opsStatusForCode(code), map[string]string{"code": code, "error": err.Error()})
+}
 func opsAllowed(method string, allowed ...string) bool {
 	for _, candidate := range allowed {
 		if method == candidate {

@@ -30,7 +30,7 @@ func (s *OpsStore) Get(ctx context.Context, id string) (OpsRecord, error) {
 	defer s.mu.RUnlock()
 	item, ok := s.items[id]
 	if !ok {
-		return OpsRecord{}, fmt.Errorf("store get %s: %v", id, ErrOpsNotFound)
+		return OpsRecord{}, fmt.Errorf("store get %s: %w", id, ErrOpsNotFound)
 	}
 	return item.Clone(), nil
 }
@@ -76,7 +76,7 @@ func (s *OpsStore) Update(ctx context.Context, item OpsRecord, expected int) err
 		return ErrOpsNotFound
 	}
 	if expected > 0 && current.Revision != expected {
-		return fmt.Errorf("store update %s: %v", item.ID, ErrOpsConflict)
+		return fmt.Errorf("store update %s: %w", item.ID, ErrOpsConflict)
 	}
 	item.Revision = current.Revision + 1
 	item.UpdatedAt = timeNowOps()

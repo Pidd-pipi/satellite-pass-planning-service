@@ -72,7 +72,7 @@ func (s *OpsService) Transition(ctx context.Context, id string, expected int, ta
 	defer cancel()
 	record, err := s.store.Get(ctx, id)
 	if err != nil {
-		return OpsRecord{}, fmt.Errorf("transition lookup %s: %v", id, err)
+		return OpsRecord{}, fmt.Errorf("transition lookup %s: %w", id, err)
 	}
 	if expected > 0 && expected != record.Revision {
 		return OpsRecord{}, ErrOpsConflict

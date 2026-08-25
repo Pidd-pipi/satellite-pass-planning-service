@@ -17,7 +17,11 @@ func newOpsAPIHandler(service *OpsService) *opsAPIHandler {
 }
 
 func opsStatusForError(err error) int {
-	switch opsCode(err) {
+	return opsStatusForCode(opsCode(err))
+}
+
+func opsStatusForCode(code string) int {
+	switch code {
 	case "not_found":
 		return http.StatusNotFound
 	case "conflict":
@@ -74,7 +78,7 @@ func (h *opsAPIHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := h.service.Search(r.Context(), q)
 	if err != nil {
-		opsJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		opsErrorJSON(w, err)
 		return
 	}
 	opsJSON(w, http.StatusOK, page)
@@ -108,7 +112,7 @@ func (h *opsAPIHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 	created, err := h.service.Create(r.Context(), record)
 	if err != nil {
-		opsJSON(w, opsStatusForError(err), map[string]string{"error": err.Error()})
+		opsErrorJSON(w, err)
 		return
 	}
 	opsJSON(w, http.StatusCreated, created)
@@ -142,7 +146,7 @@ func (h *opsAPIHandler) transition(w http.ResponseWriter, r *http.Request) {
 	}
 	record, err := h.service.Transition(opsTransitionContext(r), id, req.Expected, req.Target, req.Actor)
 	if err != nil {
-		opsJSON(w, opsStatusForError(err), map[string]string{"error": err.Error()})
+		opsErrorJSON(w, err)
 		return
 	}
 	opsJSON(w, http.StatusOK, record)
@@ -160,7 +164,7 @@ func (h *opsAPIHandler) get(w http.ResponseWriter, r *http.Request) {
 	}
 	record, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		opsJSON(w, opsStatusForError(err), map[string]string{"error": err.Error()})
+		opsErrorJSON(w, err)
 		return
 	}
 	opsJSON(w, http.StatusOK, record)
