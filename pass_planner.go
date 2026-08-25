@@ -15,11 +15,16 @@ func newPassPlanner(clock OpsClock, limits map[string]int) *PassPlanner {
 	return &PassPlanner{clock: clock, limits: limits}
 }
 
+// limitValue returns the configured limit for key, falling back to fallback
+// when the map is nil or the key is absent/non-positive. It never writes to
+// the limits map, so a nil caller-supplied map is safe and the shared config
+// is not mutated.
 func (p *PassPlanner) limitValue(key string, fallback int) int {
-	if v, ok := p.limits[key]; ok && v > 0 {
-		return v
+	if p.limits != nil {
+		if v, ok := p.limits[key]; ok && v > 0 {
+			return v
+		}
 	}
-	p.limits[key] = fallback
 	return fallback
 }
 
@@ -30,8 +35,14 @@ func (p *PassPlanner) Plan(ctx context.Context, req CreatePassRequest) (PassWind
 	if req.Satellite == "" || req.Station == "" {
 		return PassWindow{}, ErrInvalidPass
 	}
+	if req.Minutes <= 0 {
+		return PassWindow{}, fmt.Errorf("%w: window minutes must be greater than zero", ErrPassInvalid)
+	}
 	if req.Minutes > p.maxWindowMinutes() {
 		return PassWindow{}, fmt.Errorf("%w: window longer than %d minutes", ErrPassInvalid, p.maxWindowMinutes())
+	}
+	if err := passRulesAllowed(req.Station, req.Minutes); err != nil {
+		return PassWindow{}, err
 	}
 	start := p.clock.Now().Add(45 * time.Minute)
 	return PassWindow{
