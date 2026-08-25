@@ -98,7 +98,7 @@ func (s *OpsService) Snapshot() OpsSnapshot {
 		out.Records++
 		out.ByStatus[i.Status]++
 		out.ByPriority[i.Priority]++
-		if i.Status == OpsStatusActive {
+		if opsInProgress(i.Status) {
 			out.Active++
 		}
 	}

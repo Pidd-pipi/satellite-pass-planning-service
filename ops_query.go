@@ -3,7 +3,7 @@ package main
 import "strings"
 
 func opsInProgress(status OpsStatus) bool {
-	return status == OpsStatusQueued || status == OpsStatusActive
+	return status == OpsStatusQueued || status == OpsStatusActive || status == OpsStatusReview
 }
 
 func opsMatch(item OpsRecord, query OpsQuery) bool {
