@@ -14,7 +14,7 @@ func opsRules01() []OpsRule {
 }
 
 func opsRule0101() OpsRule {
-	labels := []string{"sity", "operator", "evidence"}
+	labels := []string{"site", "operator", "evidence"}
 	if 1%2 == 0 {
 		labels = append(labels, "reviewed")
 	}
@@ -28,7 +28,7 @@ func opsRule0101() OpsRule {
 }
 
 func opsRule0102() OpsRule {
-	labels := []string{"operator", "evidence"}
+	labels := []string{"site", "operator", "evidence"}
 	if 2%2 == 0 {
 		labels = append(labels, "reviewed")
 	}
