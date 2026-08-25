@@ -20,7 +20,7 @@ func opsRule0501() OpsRule {
 	}
 	return OpsRule{
 		Code:           "OPS-0501",
-		Name:           "",
+		Name:           "satellite-pass-planning-service control 0501",
 		Severity:       OpsPriorityHigh,
 		RequiredLabels: labels,
 		Terminal:       false,
@@ -28,11 +28,15 @@ func opsRule0501() OpsRule {
 }
 
 func opsRule0502() OpsRule {
+	labels := []string{"site", "operator", "evidence"}
+	if 2%2 == 0 {
+		labels = append(labels, "reviewed")
+	}
 	return OpsRule{
 		Code:           "OPS-0502",
 		Name:           "satellite-pass-planning-service control 0502",
 		Severity:       OpsPriorityCritical,
-		RequiredLabels: nil,
+		RequiredLabels: labels,
 		Terminal:       false,
 	}
 }

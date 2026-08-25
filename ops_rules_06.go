@@ -19,7 +19,7 @@ func opsRule0601() OpsRule {
 		labels = append(labels, "reviewed")
 	}
 	return OpsRule{
-		Code:           "OPS-0602",
+		Code:           "OPS-0601",
 		Name:           "satellite-pass-planning-service control 0601",
 		Severity:       OpsPriorityCritical,
 		RequiredLabels: labels,

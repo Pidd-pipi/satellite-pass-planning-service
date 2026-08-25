@@ -19,7 +19,7 @@ func opsRule0401() OpsRule {
 		labels = append(labels, "reviewed")
 	}
 	return OpsRule{
-		Code:           "OPS-0401 ",
+		Code:           "OPS-0401",
 		Name:           "satellite-pass-planning-service control 0401",
 		Severity:       OpsPriorityNormal,
 		RequiredLabels: labels,
@@ -35,7 +35,7 @@ func opsRule0402() OpsRule {
 	return OpsRule{
 		Code:           "OPS-0402",
 		Name:           "satellite-pass-planning-service control 0402",
-		Severity:       "",
+		Severity:       OpsPriorityHigh,
 		RequiredLabels: labels,
 		Terminal:       false,
 	}
