@@ -1,0 +1,18 @@
+package main
+
+import (
+	"os"
+)
+
+type Config struct {
+	Port   string
+	Limits map[string]int
+}
+
+func LoadConfig() Config {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	return Config{Port: port}
+}
