@@ -70,6 +70,11 @@ func (s *OpsService) Search(ctx context.Context, q OpsQuery) (OpsPage, error) {
 func (s *OpsService) Transition(ctx context.Context, id string, expected int, target OpsStatus, actor string) (OpsRecord, error) {
 	ctx, cancel := opsContext(ctx, 3*time.Second)
 	defer cancel()
+	// Honor request cancellation before performing any work. If the operator
+	// already hung up, we must not touch the record or the audit log at all.
+	if err := ctx.Err(); err != nil {
+		return OpsRecord{}, err
+	}
 	record, err := s.store.Get(ctx, id)
 	if err != nil {
 		return OpsRecord{}, err
@@ -77,11 +82,24 @@ func (s *OpsService) Transition(ctx context.Context, id string, expected int, ta
 	if expected > 0 && expected != record.Revision {
 		return OpsRecord{}, ErrOpsConflict
 	}
-	if err := s.state.Move(record.Status, target, "operator update"); err != nil {
-		return OpsRecord{}, err
+	from := record.Status
+	if !s.state.CanMove(from, target) {
+		return OpsRecord{}, fmt.Errorf("%w: %s to %s", ErrOpsTransition, from, target)
 	}
 	record.Status = target
 	if err := opsDelay(ctx, 250*time.Millisecond); err != nil {
+		// The request was cancelled (client disconnect or timeout) while we
+		// were waiting. Bail out before persisting the status change.
+		return OpsRecord{}, err
+	}
+	// Re-check after the delay: a cancel that arrived during the wait must
+	// stop the transition from landing in the store or the audit log.
+	if err := ctx.Err(); err != nil {
+		return OpsRecord{}, err
+	}
+	// Record the transition in the state machine only once we are committed to
+	// persisting it, so a cancelled request leaves no trace behind.
+	if err := s.state.Move(from, target, "operator update"); err != nil {
 		return OpsRecord{}, err
 	}
 	if err := s.store.Update(ctx, record, expected); err != nil {

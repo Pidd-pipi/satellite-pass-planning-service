@@ -13,7 +13,10 @@ var opsCreateSequenceValue uint64
 
 func opsCreateSequence() uint64 { return atomic.AddUint64(&opsCreateSequenceValue, 1) }
 
-func opsTransitionContext(r *http.Request) context.Context { return context.Background() }
+// opsTransitionContext returns the request's context so that an operator
+// disconnecting mid-flight cancels the transition instead of letting it run to
+// completion in the background.
+func opsTransitionContext(r *http.Request) context.Context { return r.Context() }
 
 func opsEnterpriseMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

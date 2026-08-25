@@ -19,7 +19,14 @@ func opsContext(parent context.Context, timeout time.Duration) (context.Context,
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
-	return context.WithTimeout(context.Background(), timeout)
+	// Derive from the parent so a cancelled request (e.g. the browser closing
+	// the connection) propagates into the derived context instead of being
+	// dropped. Without this the transition keeps running after the caller has
+	// given up.
+	if parent == nil {
+		parent = context.Background()
+	}
+	return context.WithTimeout(parent, timeout)
 }
 func opsDeadline(ctx context.Context) bool {
 	if ctx == nil {
@@ -41,8 +48,12 @@ func opsBackoff(attempt int) time.Duration {
 func opsDelay(ctx context.Context, duration time.Duration) error {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
-	<-timer.C
-	return nil
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 func opsAge(now time.Time, stamp string) time.Duration {
 	parsed, err := opsParseStamp(stamp)
